@@ -1,0 +1,3214 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>myIP — Your IP Address</title>
+
+    <meta
+        name="description"
+        content="Tarkista julkinen IP-osoitteesi, sijaintisi, operaattorisi ja verkkotietosi."
+    >
+
+    <meta name="theme-color" content="#07090d">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- MapLibre -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css"
+    >
+
+    <style>
+
+        /* =========================================================
+           RESET
+        ========================================================= */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #07090d;
+            color: #f8fafc;
+            font-family: "Inter", sans-serif;
+            overflow-x: hidden;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+
+        /* =========================================================
+           VARIABLES
+        ========================================================= */
+
+        :root {
+            --bg: #07090d;
+            --bg-soft: #0a0d12;
+            --card: rgba(15, 19, 27, 0.78);
+            --card-solid: #0f131b;
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.13);
+
+            --text: #f8fafc;
+            --muted: #8b95a7;
+            --muted-light: #aeb7c6;
+
+            --accent: #38bdf8;
+            --accent-2: #06b6d4;
+
+            --success: #34d399;
+            --danger: #fb7185;
+
+            --radius: 18px;
+            --radius-lg: 26px;
+
+            --container: 1180px;
+        }
+
+
+        /* =========================================================
+           BACKGROUND
+        ========================================================= */
+
+        .background-grid {
+            position: fixed;
+            inset: 0;
+            z-index: -3;
+            pointer-events: none;
+
+            background-image:
+                linear-gradient(
+                    rgba(255,255,255,0.018) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(255,255,255,0.018) 1px,
+                    transparent 1px
+                );
+
+            background-size: 55px 55px;
+
+            mask-image: linear-gradient(
+                to bottom,
+                black,
+                transparent 85%
+            );
+        }
+
+        .background-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+
+            top: -300px;
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            border-radius: 50%;
+
+            background: rgba(14,165,233,0.08);
+
+            filter: blur(100px);
+
+            z-index: -2;
+            pointer-events: none;
+        }
+
+
+        /* =========================================================
+           CONTAINER
+        ========================================================= */
+
+        .container {
+            width: min(var(--container), calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+
+        /* =========================================================
+           HEADER
+        ========================================================= */
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+
+            border-bottom: 1px solid var(--border);
+
+            background: rgba(7,9,13,0.78);
+
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .header-inner {
+            height: 74px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 11px;
+
+            background: rgba(56,189,248,0.1);
+
+            border: 1px solid rgba(56,189,248,0.18);
+
+            color: var(--accent);
+        }
+
+        .brand-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .brand-name {
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+        }
+
+        .brand-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+
+            color: var(--muted);
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+
+            border-radius: 50%;
+
+            background: var(--success);
+
+            box-shadow: 0 0 10px rgba(52,211,153,0.7);
+        }
+
+        .desktop-nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .desktop-nav a {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            padding: 9px 12px;
+
+            color: var(--muted);
+
+            border-radius: 9px;
+
+            font-size: 13px;
+            font-weight: 500;
+
+            transition: 0.2s ease;
+        }
+
+        .desktop-nav a svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .desktop-nav a:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .mobile-menu-button {
+            display: none;
+
+            width: 40px;
+            height: 40px;
+
+            place-items: center;
+
+            background: transparent;
+            color: var(--text);
+
+            cursor: pointer;
+        }
+
+        .mobile-nav {
+            display: none;
+
+            padding: 10px 20px 18px;
+
+            border-top: 1px solid var(--border);
+        }
+
+        .mobile-nav.open {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mobile-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            padding: 13px;
+
+            border-radius: 10px;
+
+            color: var(--muted);
+
+            font-size: 14px;
+        }
+
+        .mobile-nav a:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+
+
+        /* =========================================================
+           HERO
+        ========================================================= */
+
+        .hero {
+            padding: 105px 0 90px;
+        }
+
+        .hero-container {
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 7px 11px;
+
+            border: 1px solid rgba(52,211,153,0.16);
+
+            background: rgba(52,211,153,0.06);
+
+            border-radius: 999px;
+
+            color: #8ee9c4;
+
+            font-size: 11px;
+            font-weight: 700;
+
+            letter-spacing: 0.04em;
+        }
+
+        .pulse {
+            width: 6px;
+            height: 6px;
+
+            border-radius: 50%;
+
+            background: var(--success);
+
+            box-shadow: 0 0 10px rgba(52,211,153,0.8);
+        }
+
+        .hero h1 {
+            margin-top: 24px;
+
+            font-size: clamp(48px, 7vw, 82px);
+
+            line-height: 0.98;
+
+            letter-spacing: -0.065em;
+
+            font-weight: 800;
+        }
+
+        .hero h1 span {
+            display: block;
+
+            color: #697384;
+        }
+
+        .hero-description {
+            max-width: 600px;
+
+            margin: 24px auto 0;
+
+            color: var(--muted);
+
+            line-height: 1.7;
+
+            font-size: 15px;
+        }
+
+
+        /* =========================================================
+           IP CARD
+        ========================================================= */
+
+        .ip-card {
+            max-width: 720px;
+
+            margin: 48px auto 0;
+
+            padding: 24px;
+
+            border-radius: var(--radius-lg);
+
+            border: 1px solid rgba(56,189,248,0.12);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(56,189,248,0.06),
+                    rgba(15,19,27,0.92)
+                );
+
+            box-shadow:
+                0 30px 80px rgba(0,0,0,0.28),
+                inset 0 1px 0 rgba(255,255,255,0.03);
+
+            text-align: left;
+        }
+
+        .ip-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ip-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            color: var(--muted);
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 10px;
+            font-weight: 700;
+
+            letter-spacing: 0.1em;
+        }
+
+        .live-indicator {
+            width: 7px;
+            height: 7px;
+
+            border-radius: 50%;
+
+            background: var(--success);
+
+            box-shadow: 0 0 10px rgba(52,211,153,0.8);
+        }
+
+        .ip-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .icon-button {
+            width: 34px;
+            height: 34px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 9px;
+
+            background: rgba(255,255,255,0.04);
+
+            border: 1px solid var(--border);
+
+            color: var(--muted);
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+        .icon-button:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.08);
+            border-color: var(--border-hover);
+        }
+
+        .icon-button svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .ip-address {
+            margin-top: 22px;
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: clamp(32px, 6vw, 58px);
+
+            font-weight: 700;
+
+            letter-spacing: -0.055em;
+
+            color: #f8fafc;
+
+            overflow-wrap: anywhere;
+        }
+
+        .ip-card-bottom {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 18px;
+
+            margin-top: 22px;
+
+            padding-top: 18px;
+
+            border-top: 1px solid var(--border);
+
+            color: var(--muted);
+
+            font-size: 11px;
+        }
+
+        .ip-card-bottom span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ip-card-bottom svg {
+            width: 14px;
+            height: 14px;
+
+            color: var(--accent);
+        }
+
+
+        /* =========================================================
+           SECTIONS
+        ========================================================= */
+
+        .section {
+            padding: 85px 0;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+
+            gap: 30px;
+
+            margin-bottom: 30px;
+        }
+
+        .section-eyebrow {
+            display: block;
+
+            margin-bottom: 8px;
+
+            color: var(--accent);
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 10px;
+            font-weight: 700;
+
+            letter-spacing: 0.15em;
+        }
+
+        .section-heading h2 {
+            font-size: 30px;
+
+            letter-spacing: -0.045em;
+        }
+
+        .section-description {
+            max-width: 350px;
+
+            color: var(--muted);
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+            text-align: right;
+        }
+
+
+        /* =========================================================
+           INFO GRID
+        ========================================================= */
+
+        .info-grid {
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+
+            gap: 14px;
+        }
+
+        .info-card {
+            min-height: 230px;
+
+            padding: 23px;
+
+            position: relative;
+
+            border-radius: var(--radius);
+
+            background: var(--card);
+
+            border: 1px solid var(--border);
+
+            overflow: hidden;
+
+            transition:
+                border-color 0.25s ease,
+                transform 0.25s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+        }
+
+        .card-icon {
+            width: 42px;
+            height: 42px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 11px;
+
+            background: rgba(56,189,248,0.07);
+
+            border: 1px solid rgba(56,189,248,0.11);
+
+            color: var(--accent);
+        }
+
+        .card-icon svg {
+            width: 19px;
+            height: 19px;
+        }
+
+        .card-content {
+            margin-top: 24px;
+        }
+
+        .card-label {
+            display: block;
+
+            color: var(--muted);
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 9px;
+            font-weight: 700;
+
+            letter-spacing: 0.12em;
+        }
+
+        .card-content h3 {
+            margin-top: 7px;
+
+            font-size: 20px;
+
+            letter-spacing: -0.03em;
+
+            overflow-wrap: anywhere;
+        }
+
+        .card-content p {
+            margin-top: 5px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            overflow-wrap: anywhere;
+        }
+
+        .card-footer {
+            position: absolute;
+
+            bottom: 20px;
+            left: 23px;
+            right: 23px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding-top: 14px;
+
+            border-top: 1px solid var(--border);
+
+            color: var(--muted);
+
+            font-size: 11px;
+        }
+
+        .card-footer span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-footer svg {
+            width: 13px;
+            height: 13px;
+
+            color: var(--accent);
+        }
+
+        .card-footer code {
+            font-family: "JetBrains Mono", monospace;
+
+            color: var(--muted-light);
+        }
+
+
+        /* =========================================================
+           MAP
+        ========================================================= */
+
+        .map-section {
+            padding-top: 55px;
+        }
+
+        .map-card {
+            position: relative;
+
+            height: 520px;
+
+            border-radius: var(--radius-lg);
+
+            overflow: hidden;
+
+            border: 1px solid var(--border);
+
+            background: #10141b;
+        }
+
+        #mapContainer {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-overlay {
+            position: absolute;
+
+            top: 18px;
+            left: 18px;
+
+            z-index: 2;
+        }
+
+        .map-location-card {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+
+            padding: 11px 14px;
+
+            border-radius: 12px;
+
+            background: rgba(8,10,14,0.86);
+
+            border: 1px solid rgba(255,255,255,0.09);
+
+            backdrop-filter: blur(15px);
+        }
+
+        .map-location-icon {
+            width: 34px;
+            height: 34px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 9px;
+
+            color: var(--accent);
+
+            background: rgba(56,189,248,0.1);
+        }
+
+        .map-location-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .map-location-card strong {
+            display: block;
+
+            font-size: 12px;
+        }
+
+        .map-location-card span {
+            display: block;
+
+            margin-top: 2px;
+
+            color: var(--muted);
+
+            font-size: 10px;
+        }
+
+        .map-disclaimer {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            margin-top: 11px;
+
+            color: var(--muted);
+
+            font-size: 10px;
+        }
+
+        .map-disclaimer svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .maplibregl-ctrl-group {
+            overflow: hidden;
+
+            border-radius: 10px !important;
+
+            background: rgba(8,10,14,0.9) !important;
+
+            border: 1px solid rgba(255,255,255,0.1) !important;
+        }
+
+        .maplibregl-ctrl-group button {
+            background: transparent !important;
+        }
+
+
+        /* =========================================================
+           LOOKUP
+        ========================================================= */
+
+        .lookup-section {
+            padding-top: 60px;
+        }
+
+        .lookup-card {
+            padding: 36px;
+
+            border-radius: var(--radius-lg);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(56,189,248,0.055),
+                    rgba(15,19,27,0.8)
+                );
+
+            border: 1px solid var(--border);
+        }
+
+        .lookup-content {
+            max-width: 650px;
+        }
+
+        .lookup-content h2 {
+            font-size: 30px;
+
+            letter-spacing: -0.045em;
+        }
+
+        .lookup-content p {
+            margin-top: 9px;
+
+            color: var(--muted);
+
+            font-size: 13px;
+
+            line-height: 1.7;
+        }
+
+        .lookup-form {
+            display: flex;
+
+            gap: 9px;
+
+            margin-top: 28px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+
+            position: relative;
+        }
+
+        .input-wrapper svg {
+            position: absolute;
+
+            left: 15px;
+            top: 50%;
+
+            transform: translateY(-50%);
+
+            width: 17px;
+            height: 17px;
+
+            color: var(--muted);
+        }
+
+        .input-wrapper input {
+            width: 100%;
+
+            height: 52px;
+
+            padding: 0 16px 0 45px;
+
+            border-radius: 12px;
+
+            background: rgba(0,0,0,0.24);
+
+            border: 1px solid var(--border);
+
+            outline: none;
+
+            color: var(--text);
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 13px;
+
+            transition: 0.2s ease;
+        }
+
+        .input-wrapper input:focus {
+            border-color: rgba(56,189,248,0.4);
+
+            box-shadow:
+                0 0 0 3px rgba(56,189,248,0.06);
+        }
+
+        .input-wrapper input::placeholder {
+            color: #586171;
+        }
+
+        .primary-button {
+            height: 52px;
+
+            padding: 0 20px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            border-radius: 12px;
+
+            background: var(--accent);
+
+            color: #03131b;
+
+            font-size: 13px;
+            font-weight: 800;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+        .primary-button:hover {
+            background: #67d0fa;
+
+            transform: translateY(-1px);
+        }
+
+        .primary-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+
+        /* =========================================================
+           LOOKUP RESULT
+        ========================================================= */
+
+        .lookup-result {
+            margin-top: 24px;
+
+            padding: 20px;
+
+            border-radius: 14px;
+
+            background: rgba(0,0,0,0.2);
+
+            border: 1px solid var(--border);
+        }
+
+        .lookup-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding-bottom: 18px;
+
+            border-bottom: 1px solid var(--border);
+        }
+
+        .lookup-result-header h3 {
+            margin-top: 5px;
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 20px;
+        }
+
+        .lookup-status {
+            padding: 6px 9px;
+
+            border-radius: 999px;
+
+            background: rgba(52,211,153,0.08);
+
+            color: var(--success);
+
+            font-size: 9px;
+            font-weight: 700;
+
+            letter-spacing: 0.08em;
+        }
+
+        .lookup-grid {
+            display: grid;
+
+            grid-template-columns: repeat(4, 1fr);
+
+            gap: 15px;
+
+            padding-top: 18px;
+        }
+
+        .lookup-grid span {
+            display: block;
+
+            color: var(--muted);
+
+            font-size: 10px;
+        }
+
+        .lookup-grid strong {
+            display: block;
+
+            margin-top: 5px;
+
+            font-size: 12px;
+
+            overflow-wrap: anywhere;
+        }
+
+
+        /* =========================================================
+           PROTOCOLS
+        ========================================================= */
+
+        .protocol-grid {
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+
+            gap: 14px;
+        }
+
+        .protocol-card {
+            padding: 25px;
+
+            border-radius: var(--radius);
+
+            background: var(--card);
+
+            border: 1px solid var(--border);
+        }
+
+        .protocol-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .protocol-icon {
+            width: 43px;
+            height: 43px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 11px;
+
+            background: rgba(255,255,255,0.04);
+
+            border: 1px solid var(--border);
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-weight: 700;
+
+            color: var(--accent);
+        }
+
+        .protocol-badge {
+            padding: 5px 8px;
+
+            border-radius: 6px;
+
+            background: rgba(56,189,248,0.07);
+
+            color: var(--accent);
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .protocol-card h3 {
+            margin-top: 24px;
+
+            font-size: 18px;
+
+            letter-spacing: -0.03em;
+        }
+
+        .protocol-card p {
+            margin-top: 8px;
+
+            color: var(--muted);
+
+            line-height: 1.65;
+
+            font-size: 12px;
+        }
+
+        .protocol-card code {
+            color: var(--muted-light);
+
+            font-family: "JetBrains Mono", monospace;
+        }
+
+        .protocol-example {
+            margin-top: 20px;
+
+            padding: 13px;
+
+            border-radius: 9px;
+
+            background: rgba(0,0,0,0.2);
+
+            border: 1px solid var(--border);
+
+            color: var(--muted-light);
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 12px;
+        }
+
+
+        /* =========================================================
+           ABOUT
+        ========================================================= */
+
+        .about-section {
+            border-top: 1px solid var(--border);
+        }
+
+        .about-grid {
+            display: grid;
+
+            grid-template-columns: 0.8fr 1.2fr;
+
+            gap: 80px;
+        }
+
+        .about-grid h2 {
+            max-width: 400px;
+
+            font-size: 38px;
+
+            line-height: 1.05;
+
+            letter-spacing: -0.05em;
+        }
+
+        .about-text p {
+            color: var(--muted);
+
+            font-size: 14px;
+
+            line-height: 1.8;
+        }
+
+        .about-text p + p {
+            margin-top: 15px;
+        }
+
+        .feature-list {
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+
+            gap: 9px;
+
+            margin-top: 25px;
+        }
+
+        .feature-list div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            color: var(--muted-light);
+
+            font-size: 12px;
+        }
+
+        .feature-list svg {
+            width: 15px;
+            height: 15px;
+
+            color: var(--success);
+        }
+
+
+        /* =========================================================
+           FOOTER
+        ========================================================= */
+
+        .site-footer {
+            padding: 60px 0 30px;
+
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-top {
+            display: flex;
+            justify-content: space-between;
+
+            gap: 60px;
+        }
+
+        .footer-brand {
+            max-width: 330px;
+        }
+
+        .footer-brand p {
+            margin-top: 14px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            line-height: 1.7;
+        }
+
+        .footer-links {
+            display: flex;
+
+            gap: 80px;
+        }
+
+        .footer-links > div {
+            display: flex;
+            flex-direction: column;
+
+            gap: 9px;
+        }
+
+        .footer-title {
+            margin-bottom: 4px;
+
+            color: #5e6878;
+
+            font-family: "JetBrains Mono", monospace;
+
+            font-size: 9px;
+            font-weight: 700;
+
+            letter-spacing: 0.12em;
+        }
+
+        .footer-links a {
+            color: var(--muted);
+
+            font-size: 11px;
+
+            transition: 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+
+            margin-top: 55px;
+            padding-top: 20px;
+
+            border-top: 1px solid var(--border);
+
+            color: #505967;
+
+            font-size: 10px;
+        }
+
+
+        /* =========================================================
+           TOAST
+        ========================================================= */
+
+        .toast {
+            position: fixed;
+
+            right: 22px;
+            bottom: 22px;
+
+            z-index: 999;
+
+            display: flex;
+            align-items: center;
+            gap: 9px;
+
+            padding: 12px 15px;
+
+            border-radius: 11px;
+
+            background: #11161e;
+
+            border: 1px solid var(--border-hover);
+
+            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+
+            color: var(--text);
+
+            font-size: 11px;
+
+            transform: translateY(20px);
+
+            opacity: 0;
+
+            pointer-events: none;
+
+            transition: 0.25s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+
+            transform: translateY(0);
+        }
+
+        .toast svg {
+            width: 15px;
+            height: 15px;
+
+            color: var(--success);
+        }
+
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 800px) {
+
+            .desktop-nav {
+                display: none;
+            }
+
+            .mobile-menu-button {
+                display: grid;
+            }
+
+            .hero {
+                padding: 80px 0 65px;
+            }
+
+            .hero h1 {
+                font-size: clamp(45px, 14vw, 70px);
+            }
+
+            .section {
+                padding: 65px 0;
+            }
+
+            .section-heading {
+                display: block;
+            }
+
+            .section-description {
+                margin-top: 10px;
+
+                text-align: left;
+            }
+
+            .info-grid,
+            .protocol-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .lookup-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .about-grid {
+                grid-template-columns: 1fr;
+
+                gap: 35px;
+            }
+
+            .about-grid h2 {
+                font-size: 32px;
+            }
+
+            .footer-top {
+                flex-direction: column;
+            }
+
+        }
+
+
+        @media (max-width: 560px) {
+
+            .container {
+                width: min(
+                    var(--container),
+                    calc(100% - 28px)
+                );
+            }
+
+            .hero {
+                padding-top: 65px;
+            }
+
+            .hero-description {
+                font-size: 13px;
+            }
+
+            .ip-card {
+                padding: 18px;
+            }
+
+            .ip-address {
+                font-size: 32px;
+            }
+
+            .section-heading h2,
+            .lookup-content h2 {
+                font-size: 25px;
+            }
+
+            .lookup-card {
+                padding: 22px;
+            }
+
+            .lookup-form {
+                flex-direction: column;
+            }
+
+            .primary-button {
+                width: 100%;
+            }
+
+            .lookup-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .map-card {
+                height: 400px;
+            }
+
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-links {
+                gap: 45px;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+
+    <!-- =========================================================
+         BACKGROUND
+    ========================================================== -->
+
+    <div class="background-grid"></div>
+    <div class="background-glow"></div>
+
+
+    <!-- =========================================================
+         HEADER
+    ========================================================== -->
+
+    <header class="site-header">
+
+        <div class="container header-inner">
+
+            <a href="#" class="brand">
+
+                <div class="brand-icon">
+                    <i data-lucide="globe-2"></i>
+                </div>
+
+                <div class="brand-text">
+
+                    <span class="brand-name">
+                        myIP
+                    </span>
+
+                    <span class="brand-status">
+
+                        <span class="status-dot"></span>
+
+                        ONLINE
+
+                    </span>
+
+                </div>
+
+            </a>
+
+
+            <nav class="desktop-nav">
+
+                <a href="#ip-info">
+                    <i data-lucide="network"></i>
+                    IP-tiedot
+                </a>
+
+                <a href="#map">
+                    <i data-lucide="map"></i>
+                    Kartta
+                </a>
+
+                <a href="#lookup">
+                    <i data-lucide="search"></i>
+                    IP-haku
+                </a>
+
+                <a href="#about">
+                    <i data-lucide="info"></i>
+                    Tietoa
+                </a>
+
+            </nav>
+
+
+            <button
+                class="mobile-menu-button"
+                id="mobileMenuButton"
+                aria-label="Avaa valikko"
+            >
+                <i data-lucide="menu"></i>
+            </button>
+
+        </div>
+
+
+        <div
+            class="mobile-nav"
+            id="mobileNav"
+        >
+
+            <a href="#ip-info">
+                <i data-lucide="network"></i>
+                IP-tiedot
+            </a>
+
+            <a href="#map">
+                <i data-lucide="map"></i>
+                Kartta
+            </a>
+
+            <a href="#lookup">
+                <i data-lucide="search"></i>
+                IP-haku
+            </a>
+
+            <a href="#about">
+                <i data-lucide="info"></i>
+                Tietoa
+            </a>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =========================================================
+         MAIN
+    ========================================================== -->
+
+    <main>
+
+
+        <!-- =====================================================
+             HERO
+        ====================================================== -->
+
+        <section class="hero">
+
+            <div class="container hero-container">
+
+                <div class="hero-badge">
+
+                    <span class="pulse"></span>
+
+                    Julkinen IP-osoitteesi
+
+                </div>
+
+
+                <h1>
+                    Your IP.
+                    <span>Your connection.</span>
+                </h1>
+
+
+                <p class="hero-description">
+
+                    Tarkista julkinen IP-osoitteesi ja näe
+                    verkkoyhteytesi tärkeimmät tiedot yhdestä paikasta.
+
+                </p>
+
+
+                <div class="ip-card">
+
+                    <div class="ip-card-top">
+
+                        <div class="ip-label">
+
+                            <span class="live-indicator"></span>
+
+                            PUBLIC IPv4
+
+                        </div>
+
+
+                        <div class="ip-actions">
+
+                            <button
+                                class="icon-button"
+                                id="copyIpButton"
+                                title="Kopioi IP"
+                            >
+
+                                <i data-lucide="copy"></i>
+
+                            </button>
+
+
+                            <button
+                                class="icon-button"
+                                id="refreshButton"
+                                title="Päivitä"
+                            >
+
+                                <i data-lucide="refresh-cw"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="ip-address"
+                        id="ipAddress"
+                    >
+                        Haetaan...
+                    </div>
+
+
+                    <div class="ip-card-bottom">
+
+                        <span>
+
+                            <i data-lucide="shield-check"></i>
+
+                            Public address
+
+                        </span>
+
+
+                        <span>
+
+                            <i data-lucide="wifi"></i>
+
+                            Internet connection
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================================
+             CONNECTION INFO
+        ====================================================== -->
+
+        <section
+            class="section"
+            id="ip-info"
+        >
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div>
+
+                        <span class="section-eyebrow">
+                            CONNECTION
+                        </span>
+
+                        <h2>
+                            Yhteytesi tiedot
+                        </h2>
+
+                    </div>
+
+
+                    <span class="section-description">
+
+                        Julkiseen IP-osoitteeseesi liittyviä tietoja.
+
+                    </span>
+
+                </div>
+
+
+                <div class="info-grid">
+
+
+                    <!-- LOCATION -->
+
+                    <article class="info-card">
+
+                        <div class="card-icon">
+                            <i data-lucide="map-pin"></i>
+                        </div>
+
+
+                        <div class="card-content">
+
+                            <span class="card-label">
+                                SIJAINTI
+                            </span>
+
+                            <h3 id="location">
+                                Haetaan...
+                            </h3>
+
+                            <p id="country">
+                                Haetaan...
+                            </p>
+
+                        </div>
+
+
+                        <div class="card-footer">
+
+                            <span>
+
+                                <i data-lucide="navigation"></i>
+
+                                Koordinaatit
+
+                            </span>
+
+                            <code id="coordinates">
+                                --
+                            </code>
+
+                        </div>
+
+                    </article>
+
+
+
+                    <!-- ISP -->
+
+                    <article class="info-card">
+
+                        <div class="card-icon">
+                            <i data-lucide="building-2"></i>
+                        </div>
+
+
+                        <div class="card-content">
+
+                            <span class="card-label">
+                                INTERNET-PALVELUNTARJOAJA
+                            </span>
+
+                            <h3 id="isp">
+                                Haetaan...
+                            </h3>
+
+                            <p id="organization">
+                                Haetaan...
+                            </p>
+
+                        </div>
+
+
+                        <div class="card-footer">
+
+                            <span>
+
+                                <i data-lucide="server"></i>
+
+                                ASN
+
+                            </span>
+
+                            <code id="asn">
+                                --
+                            </code>
+
+                        </div>
+
+                    </article>
+
+
+
+                    <!-- TIMEZONE -->
+
+                    <article class="info-card">
+
+                        <div class="card-icon">
+                            <i data-lucide="clock-3"></i>
+                        </div>
+
+
+                        <div class="card-content">
+
+                            <span class="card-label">
+                                AIKAVYÖHYKE
+                            </span>
+
+                            <h3 id="timezone">
+                                Haetaan...
+                            </h3>
+
+                            <p id="timezoneOffset">
+                                --
+                            </p>
+
+                        </div>
+
+
+                        <div class="card-footer">
+
+                            <span>
+
+                                <i data-lucide="globe"></i>
+
+                                Alue
+
+                            </span>
+
+                            <code id="region">
+                                --
+                            </code>
+
+                        </div>
+
+                    </article>
+
+
+
+                    <!-- REGION -->
+
+                    <article class="info-card">
+
+                        <div class="card-icon">
+                            <i data-lucide="map"></i>
+                        </div>
+
+
+                        <div class="card-content">
+
+                            <span class="card-label">
+                                ALUE
+                            </span>
+
+                            <h3 id="postal">
+                                Haetaan...
+                            </h3>
+
+                            <p id="city">
+                                Haetaan...
+                            </p>
+
+                        </div>
+
+
+                        <div class="card-footer">
+
+                            <span>
+
+                                <i data-lucide="flag"></i>
+
+                                Maa
+
+                            </span>
+
+                            <code id="countryCode">
+                                --
+                            </code>
+
+                        </div>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================================
+             MAP
+        ====================================================== -->
+
+        <section
+            class="section map-section"
+            id="map"
+        >
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div>
+
+                        <span class="section-eyebrow">
+                            GEOLOCATION
+                        </span>
+
+                        <h2>
+                            IP-sijainti kartalla
+                        </h2>
+
+                    </div>
+
+
+                    <span class="section-description">
+
+                        Arvioitu sijainti IP-osoitteen perusteella.
+
+                    </span>
+
+                </div>
+
+
+                <div class="map-card">
+
+                    <div id="mapContainer"></div>
+
+
+                    <div class="map-overlay">
+
+                        <div class="map-location-card">
+
+                            <div class="map-location-icon">
+
+                                <i data-lucide="map-pin"></i>
+
+                            </div>
+
+
+                            <div>
+
+                                <strong id="mapCity">
+                                    Haetaan...
+                                </strong>
+
+                                <span id="mapCountry">
+                                    Haetaan...
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="map-disclaimer">
+
+                    <i data-lucide="info"></i>
+
+                    IP-geolokaatio on arvio eikä vastaa
+                    välttämättä tarkkaa fyysistä sijaintia.
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================================
+             IP LOOKUP
+        ====================================================== -->
+
+        <section
+            class="section lookup-section"
+            id="lookup"
+        >
+
+            <div class="container">
+
+                <div class="lookup-card">
+
+                    <div class="lookup-content">
+
+                        <span class="section-eyebrow">
+                            IP LOOKUP
+                        </span>
+
+                        <h2>
+                            Hae minkä tahansa IP-osoitteen tiedot
+                        </h2>
+
+                        <p>
+
+                            Syötä IPv4- tai IPv6-osoite ja tarkista
+                            siihen liittyvät verkkotiedot.
+
+                        </p>
+
+                    </div>
+
+
+                    <form
+                        class="lookup-form"
+                        id="lookupForm"
+                    >
+
+                        <div class="input-wrapper">
+
+                            <i data-lucide="search"></i>
+
+                            <input
+                                type="text"
+                                id="lookupInput"
+                                placeholder="Esim. 8.8.8.8"
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="primary-button"
+                        >
+
+                            <i data-lucide="search"></i>
+
+                            Hae IP
+
+                        </button>
+
+                    </form>
+
+
+                    <div
+                        class="lookup-result"
+                        id="lookupResult"
+                        hidden
+                    >
+
+                        <div class="lookup-result-header">
+
+                            <div>
+
+                                <span class="card-label">
+                                    HAKUTULOS
+                                </span>
+
+                                <h3 id="lookupIp">
+                                    --
+                                </h3>
+
+                            </div>
+
+
+                            <span
+                                class="lookup-status"
+                                id="lookupStatus"
+                            >
+                                FOUND
+                            </span>
+
+                        </div>
+
+
+                        <div class="lookup-grid">
+
+                            <div>
+
+                                <span>
+                                    Sijainti
+                                </span>
+
+                                <strong id="lookupLocation">
+                                    --
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    ISP
+                                </span>
+
+                                <strong id="lookupIsp">
+                                    --
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    ASN
+                                </span>
+
+                                <strong id="lookupAsn">
+                                    --
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    Aikavyöhyke
+                                </span>
+
+                                <strong id="lookupTimezone">
+                                    --
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================================
+             IPV4 / IPV6
+        ====================================================== -->
+
+        <section class="section">
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div>
+
+                        <span class="section-eyebrow">
+                            NETWORK
+                        </span>
+
+                        <h2>
+                            IPv4 & IPv6
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="protocol-grid">
+
+
+                    <article class="protocol-card">
+
+                        <div class="protocol-header">
+
+                            <div class="protocol-icon">
+                                4
+                            </div>
+
+                            <span class="protocol-badge">
+                                IPv4
+                            </span>
+
+                        </div>
+
+
+                        <h3>
+                            Internet Protocol v4
+                        </h3>
+
+
+                        <p>
+
+                            IPv4 käyttää 32-bittisiä osoitteita,
+                            esimerkiksi <code>192.168.1.1</code>.
+
+                        </p>
+
+
+                        <div class="protocol-example">
+                            192.168.1.1
+                        </div>
+
+                    </article>
+
+
+
+                    <article class="protocol-card">
+
+                        <div class="protocol-header">
+
+                            <div class="protocol-icon">
+                                6
+                            </div>
+
+                            <span class="protocol-badge">
+                                IPv6
+                            </span>
+
+                        </div>
+
+
+                        <h3>
+                            Internet Protocol v6
+                        </h3>
+
+
+                        <p>
+
+                            IPv6 käyttää 128-bittisiä osoitteita,
+                            mikä mahdollistaa valtavan määrän
+                            yksilöllisiä osoitteita.
+
+                        </p>
+
+
+                        <div class="protocol-example">
+                            2001:db8::1
+                        </div>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================================
+             ABOUT
+        ====================================================== -->
+
+        <section
+            class="section about-section"
+            id="about"
+        >
+
+            <div class="container">
+
+                <div class="about-grid">
+
+                    <div>
+
+                        <span class="section-eyebrow">
+                            ABOUT IP
+                        </span>
+
+                        <h2>
+                            Mikä IP-osoite oikeastaan on?
+                        </h2>
+
+                    </div>
+
+
+                    <div class="about-text">
+
+                        <p>
+
+                            IP-osoite on verkossa käytettävä osoite,
+                            jonka avulla laitteet ja palvelut voivat
+                            kommunikoida keskenään Internetissä.
+
+                        </p>
+
+
+                        <p>
+
+                            Julkinen IP-osoitteesi näkyy verkkopalveluille,
+                            joihin muodostat yhteyden. IP-osoitteen perusteella
+                            voidaan tehdä esimerkiksi karkea arvio yhteytesi
+                            sijainnista ja Internet-palveluntarjoajasta.
+
+                        </p>
+
+
+                        <div class="feature-list">
+
+                            <div>
+
+                                <i data-lucide="check-circle-2"></i>
+
+                                Julkinen IP-osoite
+
+                            </div>
+
+
+                            <div>
+
+                                <i data-lucide="check-circle-2"></i>
+
+                                ISP- ja ASN-tiedot
+
+                            </div>
+
+
+                            <div>
+
+                                <i data-lucide="check-circle-2"></i>
+
+                                Arvioitu sijainti
+
+                            </div>
+
+
+                            <div>
+
+                                <i data-lucide="check-circle-2"></i>
+
+                                IPv4 / IPv6
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- =========================================================
+         FOOTER
+    ========================================================== -->
+
+    <footer class="site-footer">
+
+        <div class="container">
+
+            <div class="footer-top">
+
+                <div class="footer-brand">
+
+                    <div class="brand">
+
+                        <div class="brand-icon">
+
+                            <i data-lucide="globe-2"></i>
+
+                        </div>
+
+
+                        <div class="brand-text">
+
+                            <span class="brand-name">
+                                myIP
+                            </span>
+
+                            <span class="brand-status">
+                                NETWORK TOOLS
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <p>
+
+                        Yksinkertainen tapa tarkistaa
+                        verkkoyhteytesi perustiedot.
+
+                    </p>
+
+                </div>
+
+
+                <div class="footer-links">
+
+                    <div>
+
+                        <span class="footer-title">
+                            TYÖKALUT
+                        </span>
+
+                        <a href="#lookup">
+                            IP-haku
+                        </a>
+
+                        <a href="#map">
+                            IP-kartta
+                        </a>
+
+                        <a href="#ip-info">
+                            IP-tiedot
+                        </a>
+
+                    </div>
+
+
+                    <div>
+
+                        <span class="footer-title">
+                            TIETOA
+                        </span>
+
+                        <a href="#about">
+                            Mikä on IP?
+                        </a>
+
+                        <a href="#about">
+                            IPv4
+                        </a>
+
+                        <a href="#about">
+                            IPv6
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="footer-bottom">
+
+                <span>
+                    © <span id="currentYear"></span> myIP
+                </span>
+
+                <span>
+                Build with ❤️ by the Auramo
+                </span>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+
+
+    <!-- =========================================================
+         TOAST
+    ========================================================== -->
+
+    <div
+        class="toast"
+        id="toast"
+    >
+
+        <i data-lucide="check"></i>
+
+        <span id="toastMessage">
+            Kopioitu!
+        </span>
+
+    </div>
+
+
+
+    <!-- =========================================================
+         MAPLIBRE
+    ========================================================== -->
+
+    <script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
+
+
+    <script>
+
+        /* ========================================================
+           GLOBALS
+        ======================================================== */
+
+        let currentIP = null;
+        let currentData = null;
+        let map = null;
+        let marker = null;
+
+
+        /* ========================================================
+           DOM
+        ======================================================== */
+
+        const $ = (id) => document.getElementById(id);
+
+
+        /* ========================================================
+           TOAST
+        ======================================================== */
+
+        function showToast(message) {
+
+            const toast = $("toast");
+            const text = $("toastMessage");
+
+            text.textContent = message;
+
+            toast.classList.add("show");
+
+            setTimeout(() => {
+
+                toast.classList.remove("show");
+
+            }, 2500);
+
+        }
+
+
+        /* ========================================================
+           COPY
+        ======================================================== */
+
+        async function copyIP() {
+
+            if (!currentIP) {
+
+                showToast("IP-osoitetta ei ole vielä ladattu.");
+
+                return;
+
+            }
+
+            try {
+
+                await navigator.clipboard.writeText(currentIP);
+
+                showToast("IP-osoite kopioitu!");
+
+            } catch {
+
+                showToast("Kopiointi epäonnistui.");
+
+            }
+
+        }
+
+
+        /* ========================================================
+           FETCH IP
+        ======================================================== */
+
+        async function fetchIPData(ip = "") {
+
+            try {
+
+                let url;
+
+                if (ip) {
+
+                    url =
+                        `https://ipapi.co/${encodeURIComponent(ip)}/json/`;
+
+                } else {
+
+                    url =
+                        "https://ipapi.co/json/";
+
+                }
+
+
+                const response = await fetch(url, {
+                    cache: "no-store"
+                });
+
+
+                if (!response.ok) {
+                    throw new Error("API request failed");
+                }
+
+
+                const data = await response.json();
+
+
+                if (data.error) {
+                    throw new Error(
+                        data.reason || "IP lookup failed"
+                    );
+                }
+
+
+                return data;
+
+            } catch (error) {
+
+                console.error(error);
+
+                throw error;
+
+            }
+
+        }
+
+
+        /* ========================================================
+           UPDATE UI
+        ======================================================== */
+
+        function updateUI(data) {
+
+            currentData = data;
+            currentIP = data.ip || null;
+
+
+            /* IP */
+
+            $("ipAddress").textContent =
+                data.ip || "Tuntematon";
+
+
+            /* Location */
+
+            const city =
+                data.city || "Tuntematon";
+
+            const region =
+                data.region || "";
+
+            $("location").textContent =
+                city;
+
+            $("city").textContent =
+                region || "Alue ei tiedossa";
+
+
+            $("country").textContent =
+                `${data.country_name || "Tuntematon"} ${
+                    data.country || ""
+                }`;
+
+
+            /* Coordinates */
+
+            if (
+                data.latitude !== undefined &&
+                data.longitude !== undefined
+            ) {
+
+                $("coordinates").textContent =
+                    `${Number(data.latitude).toFixed(4)}, ${
+                        Number(data.longitude).toFixed(4)
+                    }`;
+
+            } else {
+
+                $("coordinates").textContent = "--";
+
+            }
+
+
+            /* ISP */
+
+            $("isp").textContent =
+                data.org ||
+                data.asn ||
+                "Tuntematon";
+
+
+            $("organization").textContent =
+                data.org ||
+                "Organisaatio ei tiedossa";
+
+
+            /* ASN */
+
+            $("asn").textContent =
+                data.asn ||
+                "--";
+
+
+            /* Timezone */
+
+            $("timezone").textContent =
+                data.timezone ||
+                "Tuntematon";
+
+
+            $("timezoneOffset").textContent =
+                data.utc_offset ||
+                "--";
+
+
+            /* Region */
+
+            $("region").textContent =
+                data.region_code ||
+                data.country_code ||
+                "--";
+
+
+            /* Postal */
+
+            $("postal").textContent =
+                data.postal ||
+                "Ei saatavilla";
+
+
+            /* Country code */
+
+            $("countryCode").textContent =
+                data.country_code ||
+                "--";
+
+
+            /* Map */
+
+            $("mapCity").textContent =
+                data.city ||
+                "Tuntematon";
+
+
+            $("mapCountry").textContent =
+                data.country_name ||
+                "Tuntematon";
+
+
+            initializeMap(data);
+
+        }
+
+
+        /* ========================================================
+           MAP
+        ======================================================== */
+
+        function initializeMap(data) {
+
+            const lat = Number(data.latitude);
+            const lon = Number(data.longitude);
+
+
+            if (
+                !Number.isFinite(lat) ||
+                !Number.isFinite(lon)
+            ) {
+
+                return;
+
+            }
+
+
+            if (!window.maplibregl) {
+
+                console.error(
+                    "MapLibre GL JS ei latautunut."
+                );
+
+                return;
+
+            }
+
+
+            if (map) {
+
+                map.remove();
+
+                map = null;
+
+                marker = null;
+
+            }
+
+
+            map = new maplibregl.Map({
+
+                container: "mapContainer",
+
+                style: {
+                    version: 8,
+
+                    sources: {
+
+                        osm: {
+
+                            type: "raster",
+
+                            tiles: [
+                                "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            ],
+
+                            tileSize: 256,
+
+                            attribution:
+                                "© OpenStreetMap contributors"
+
+                        }
+
+                    },
+
+                    layers: [
+
+                        {
+                            id: "osm",
+
+                            type: "raster",
+
+                            source: "osm"
+
+                        }
+
+                    ]
+
+                },
+
+                center: [lon, lat],
+
+                zoom: 9,
+
+                attributionControl: true
+
+            });
+
+
+            map.addControl(
+                new maplibregl.NavigationControl(),
+                "top-right"
+            );
+
+
+            marker =
+                new maplibregl.Marker({
+                    color: "#38bdf8"
+                })
+                .setLngLat([lon, lat])
+                .addTo(map);
+
+        }
+
+
+        /* ========================================================
+           INITIAL LOAD
+        ======================================================== */
+
+        async function loadMyIP() {
+
+            $("ipAddress").textContent =
+                "Haetaan...";
+
+
+            try {
+
+                const data =
+                    await fetchIPData();
+
+                updateUI(data);
+
+            } catch (error) {
+
+                $("ipAddress").textContent =
+                    "Ei saatavilla";
+
+                $("location").textContent =
+                    "Tietojen haku epäonnistui";
+
+                $("country").textContent =
+                    "Tarkista Internet-yhteytesi.";
+
+                showToast(
+                    "IP-tietojen haku epäonnistui."
+                );
+
+            }
+
+        }
+
+
+        /* ========================================================
+           LOOKUP
+        ======================================================== */
+
+        $("lookupForm").addEventListener(
+            "submit",
+            async (event) => {
+
+                event.preventDefault();
+
+
+                const input =
+                    $("lookupInput").value.trim();
+
+
+                if (!input) {
+
+                    showToast(
+                        "Syötä IP-osoite."
+                    );
+
+                    return;
+
+                }
+
+
+                const button =
+                    event.target.querySelector(
+                        "button[type='submit']"
+                    );
+
+
+                const original =
+                    button.innerHTML;
+
+
+                button.disabled = true;
+
+                button.innerHTML =
+                    `
+                        <i data-lucide="loader-circle"></i>
+                        Haetaan...
+                    `;
+
+                lucide.createIcons();
+
+
+                try {
+
+                    const data =
+                        await fetchIPData(input);
+
+
+                    $("lookupResult").hidden =
+                        false;
+
+
+                    $("lookupIp").textContent =
+                        data.ip || input;
+
+
+                    $("lookupLocation").textContent =
+                        [
+                            data.city,
+                            data.country_name
+                        ]
+                        .filter(Boolean)
+                        .join(", ") ||
+                        "--";
+
+
+                    $("lookupIsp").textContent =
+                        data.org ||
+                        "--";
+
+
+                    $("lookupAsn").textContent =
+                        data.asn ||
+                        "--";
+
+
+                    $("lookupTimezone").textContent =
+                        data.timezone ||
+                        "--";
+
+
+                    $("lookupStatus").textContent =
+                        "FOUND";
+
+
+                    showToast(
+                        "IP-tiedot haettu."
+                    );
+
+
+                    $("lookupResult").scrollIntoView({
+                        behavior: "smooth",
+                        block: "nearest"
+                    });
+
+                } catch {
+
+                    $("lookupResult").hidden =
+                        false;
+
+
+                    $("lookupIp").textContent =
+                        input;
+
+
+                    $("lookupLocation").textContent =
+                        "Ei löytynyt";
+
+
+                    $("lookupIsp").textContent =
+                        "--";
+
+
+                    $("lookupAsn").textContent =
+                        "--";
+
+
+                    $("lookupTimezone").textContent =
+                        "--";
+
+
+                    $("lookupStatus").textContent =
+                        "ERROR";
+
+
+                    showToast(
+                        "IP-osoitetta ei voitu hakea."
+                    );
+
+                } finally {
+
+                    button.disabled = false;
+
+                    button.innerHTML =
+                        original;
+
+                    lucide.createIcons();
+
+                }
+
+            }
+        );
+
+
+        /* ========================================================
+           COPY BUTTON
+        ======================================================== */
+
+        $("copyIpButton").addEventListener(
+            "click",
+            copyIP
+        );
+
+
+        /* ========================================================
+           REFRESH
+        ======================================================== */
+
+        $("refreshButton").addEventListener(
+            "click",
+            async () => {
+
+                const button =
+                    $("refreshButton");
+
+
+                button.style.transform =
+                    "rotate(180deg)";
+
+
+                await loadMyIP();
+
+
+                setTimeout(() => {
+
+                    button.style.transform =
+                        "";
+
+                }, 300);
+
+            }
+        );
+
+
+        /* ========================================================
+           MOBILE NAV
+        ======================================================== */
+
+        const mobileButton =
+            $("mobileMenuButton");
+
+        const mobileNav =
+            $("mobileNav");
+
+
+        mobileButton.addEventListener(
+            "click",
+            () => {
+
+                mobileNav.classList.toggle(
+                    "open"
+                );
+
+            }
+        );
+
+
+        mobileNav
+            .querySelectorAll("a")
+            .forEach(link => {
+
+                link.addEventListener(
+                    "click",
+                    () => {
+
+                        mobileNav.classList.remove(
+                            "open"
+                        );
+
+                    }
+                );
+
+            });
+
+
+        /* ========================================================
+           YEAR
+        ======================================================== */
+
+        $("currentYear").textContent =
+            new Date().getFullYear();
+
+
+        /* ========================================================
+           LUCIDE
+        ======================================================== */
+
+        lucide.createIcons();
+
+
+        /* ========================================================
+           START
+        ======================================================== */
+
+        loadMyIP();
+
+    </script>
+
+</body>
+</html>
